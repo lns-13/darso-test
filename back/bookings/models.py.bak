@@ -1,0 +1,87 @@
+"""
+bookings/models.py
+
+A Booking connects a Student to a Teacher for a requested session.
+Per your answers: the student picks any date/time, and the teacher
+then confirms or rejects it (no fixed slot system).
+"""
+
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+
+from accounts.models import Role, Subject, User
+
+
+class BookingStatus(models.TextChoices):
+    PENDING = "pending", _("Pending")
+    CONFIRMED = "confirmed", _("Confirmed")
+    REJECTED = "rejected", _("Rejected")
+    CANCELLED = "cancelled", _("Cancelled")
+    COMPLETED = "completed", _("Completed")
+
+
+class Booking(models.Model):
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="bookings_as_student",
+        limit_choices_to={"role": Role.STUDENT},
+    )
+    teacher = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="bookings_as_teacher",
+        limit_choices_to={"role": Role.TEACHER},
+    )
+    subject = models.ForeignKey(
+        Subject,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="bookings",
+        help_text=_("Optional: which subject this session is for."),
+    )
+
+    requested_datetime = models.DateTimeField(
+        help_text=_("The date/time the student requested for the session.")
+    )
+    duration_minutes = models.PositiveIntegerField(default=60)
+
+    status = models.CharField(
+        max_length=12,
+        choices=BookingStatus.choices,
+        default=BookingStatus.PENDING,
+    )
+
+    student_notes = models.TextField(
+        blank=True, help_text=_("Optional message from the student when booking.")
+    )
+    teacher_response_notes = models.TextField(
+        blank=True, help_text=_("Optional message from the teacher when responding.")
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-requested_datetime"]
+
+    def __str__(self):
+        return f"{self.student} -> {self.teacher} @ {self.requested_datetime} ({self.status})"
+
+    def clean(self):
+        super().clean()
+        if self.student_id and self.student.role != Role.STUDENT:
+            raise ValidationError({"student": _("This user is not a student.")})
+        if self.teacher_id and self.teacher.role != Role.TEACHER:
+            raise ValidationError({"teacher": _("This user is not a teacher.")})
+        if self.requested_datetime and self.requested_datetime < timezone.now():
+            raise ValidationError(
+                {"requested_datetime": _("Requested time must be in the future.")}
+            )
+
+    @property
+    def is_decided(self):
+        return self.status in (BookingStatus.CONFIRMED, BookingStatus.REJECTED)

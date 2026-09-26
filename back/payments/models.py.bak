@@ -1,0 +1,73 @@
+"""
+payments/models.py
+
+No real payment gateway yet — this just records payments manually
+(e.g. an admin/teacher marks a booking as paid, with a note of how).
+Designed so a real gateway (Stripe/PayPal) can be added later by
+adding fields like `provider_transaction_id` without breaking this.
+"""
+
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.db import models
+from django.utils.translation import gettext_lazy as _
+
+from bookings.models import Booking
+
+
+class PaymentStatus(models.TextChoices):
+    PENDING = "pending", _("Pending")
+    PAID = "paid", _("Paid")
+    FAILED = "failed", _("Failed")
+    REFUNDED = "refunded", _("Refunded")
+
+
+class PaymentMethod(models.TextChoices):
+    CASH = "cash", _("Cash")
+    BANK_TRANSFER = "bank_transfer", _("Bank Transfer")
+    OTHER = "other", _("Other / Manual")
+
+
+class Payment(models.Model):
+    booking = models.OneToOneField(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name="payment",
+    )
+
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    status = models.CharField(
+        max_length=10,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.PENDING,
+    )
+    method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.OTHER,
+    )
+    reference_note = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text=_("e.g. 'Paid in cash after session' or a bank ref number."),
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"Payment for booking #{self.booking_id} - {self.status}"
+
+    def clean(self):
+        super().clean()
+        if self.amount is not None and self.amount <= Decimal("0"):
+            raise ValidationError({"amount": _("Amount must be greater than zero.")})
+        if self.status == PaymentStatus.PAID and not self.paid_at:
+            raise ValidationError(
+                {"paid_at": _("paid_at must be set when status is 'paid'.")}
+            )

@@ -1,0 +1,145 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary-dark: var(--primary-dark);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --shadow-focus:
+    0 0 0 3px var(--ring-soft),
+    0 0 0 1.5px var(--ring);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #0A0B0E;
+
+  --primary-dark: #0D0F14;
+  --primary-foreground: #FFFFFF;
+  --accent: #2F6FEB;
+
+  --border: #E2E4E7;
+  --border-strong: #CDD0D5;
+  --ring: #2F6FEB;
+  --ring-soft: rgba(47, 111, 235, 0.22);
+
+  color-scheme: light;
+}
+
+@layer base {
+  html,
+  body {
+    overflow-x: clip;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  ::selection {
+    background-color: #DFFF3F;
+    color: #0B0B0F;
+  }
+
+  /* Scrollbars sit inset from rounded container edges so they don't clip corners.
+     Track has vertical margin, thumb is thin with padding-clip trick. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #C8CBD0 transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+    margin-block: 14px;
+    margin-inline: 14px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: #D5D7DB;
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: padding-box;
+    transition: background-color 200ms var(--ease-out);
+    min-height: 40px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #A9ACB2;
+    background-clip: padding-box;
+  }
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+  /* Hide scrollbar utility for panels that should never show one */
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  input,
+  textarea,
+  select {
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  input::-webkit-search-cancel-button,
+  input::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+
+  :focus {
+    outline: none;
+  }
+  :focus-visible {
+    outline: none;
+  }
+}
+
+@layer utilities {
+  .container-wide {
+    width: 100%;
+    margin-inline: auto;
+    padding-inline: 1rem;
+    max-width: 90rem;
+  }
+  @media (min-width: 480px) {
+    .container-wide { padding-inline: 1.25rem; }
+  }
+  @media (min-width: 768px) {
+    .container-wide { padding-inline: 1.5rem; }
+  }
+  @media (min-width: 1024px) {
+    .container-wide { padding-inline: 2rem; }
+  }
+  @media (min-width: 1280px) {
+    .container-wide { padding-inline: 2.5rem; }
+  }
+
+  .text-balance { text-wrap: balance; }
+}
